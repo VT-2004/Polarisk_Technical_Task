@@ -38,6 +38,10 @@ export default function LandingPage() {
         credentials: "include"
       });
       if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          localStorage.setItem("spend_intel_token", data.token);
+        }
         router.push("/dashboard");
       } else {
         setErrorMsg(`Could not connect to backend server at ${BACKEND_URL}. Ensure the backend is active.`);
@@ -48,6 +52,7 @@ export default function LandingPage() {
       setIsDemoLoading(false);
     }
   };
+
 
 
   return (

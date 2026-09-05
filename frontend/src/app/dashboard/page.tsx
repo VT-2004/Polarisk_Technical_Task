@@ -161,6 +161,11 @@ export default function DashboardPage() {
   const formatCurrency = (amount: number, currency: string = "INR") => {
     const symbol = currency === "INR" ? "₹" : (currency === "USD" ? "$" : (currency === "EUR" ? "€" : currency));
     return `${symbol}${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    // Auth headers helper (supports cross-domain token fallback)
+  const getAuthHeaders = () => {
+    if (typeof window === "undefined") return {};
+    const token = localStorage.getItem("spend_intel_token");
+    return token ? { "Authorization": `Bearer ${token}` } : {};
   };
 
   const fetchDashboard = async (runId?: number | null) => {
@@ -172,6 +177,7 @@ export default function DashboardPage() {
         : `${BACKEND_URL}/api/dashboard`;
 
       const res = await fetch(url, {
+        headers: getAuthHeaders(),
         credentials: "include"
       });
 
@@ -199,6 +205,7 @@ export default function DashboardPage() {
   const pollScanProgress = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/scan/progress`, {
+        headers: getAuthHeaders(),
         credentials: "include"
       });
       if (res.ok) {
@@ -222,6 +229,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${BACKEND_URL}/api/scan`, {
         method: "POST",
+        headers: getAuthHeaders(),
         credentials: "include"
       });
       if (res.ok) {
@@ -240,6 +248,7 @@ export default function DashboardPage() {
     try {
       await fetch(`${BACKEND_URL}/api/runs/${runId}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
         credentials: "include"
       });
       fetchDashboard();
@@ -252,10 +261,15 @@ export default function DashboardPage() {
     try {
       await fetch(`${BACKEND_URL}/api/auth/logout`, {
         method: "POST",
+        headers: getAuthHeaders(),
         credentials: "include"
       });
-      router.push("/");
     } catch (e) {
+      // Ignore
+    } finally {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("spend_intel_token");
+      }
       router.push("/");
     }
   };
@@ -268,9 +282,13 @@ export default function DashboardPage() {
     try {
       await fetch(`${BACKEND_URL}/api/auth/revoke`, {
         method: "POST",
+        headers: getAuthHeaders(),
         credentials: "include"
       });
       alert("Google access has been formally revoked and all data deleted.");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("spend_intel_token");
+      }
       router.push("/");
     } catch (e) {
       alert("Failed to revoke access");
@@ -279,8 +297,15 @@ export default function DashboardPage() {
     }
   };
 
-
   useEffect(() => {
+    // Check URL params for token callback
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromUrl = params.get("token");
+      if (tokenFromUrl) {
+        localStorage.setItem("spend_intel_token", tokenFromUrl);
+      }
+    }
     fetchDashboard();
     pollScanProgress();
   }, []);

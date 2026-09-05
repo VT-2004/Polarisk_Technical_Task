@@ -149,16 +149,23 @@ async def oauth_callback(code: Optional[str] = None, state: Optional[str] = None
 
     # Create signed session cookie and redirect to dashboard
     session_token = create_session_token(user_email)
-    response = RedirectResponse(url=f"{FRONTEND_URL}/dashboard?connected=true")
+    
+    # Adaptive cookie settings for cross-domain production (Render + Vercel)
+    is_prod = bool(os.getenv("RENDER") or FRONTEND_URL.startswith("https://"))
+    samesite_val = "none" if is_prod else "lax"
+    secure_val = True if is_prod else False
+
+    response = RedirectResponse(url=f"{FRONTEND_URL}/dashboard?connected=true&token={session_token}")
     response.set_cookie(
         key=COOKIE_NAME,
         value=session_token,
         httponly=True,
-        samesite="lax",
-        secure=False, # Set to True in production HTTPS
+        samesite=samesite_val,
+        secure=secure_val,
         max_age=86400 * 14
     )
     return response
+
 
 @router.get("/me")
 def get_me(request: Request, db: Session = Depends(get_db)):

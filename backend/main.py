@@ -472,12 +472,17 @@ def load_demo_data(response: Response, db: Session = Depends(get_db)):
 
     from auth import create_session_token
     session_token = create_session_token(demo_email)
+    
+    is_prod = bool(os.getenv("RENDER") or FRONTEND_URL.startswith("https://"))
+    samesite_val = "none" if is_prod else "lax"
+    secure_val = True if is_prod else False
+
     response.set_cookie(
         key=COOKIE_NAME,
         value=session_token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite=samesite_val,
+        secure=secure_val,
         max_age=86400 * 14
     )
 
@@ -485,8 +490,10 @@ def load_demo_data(response: Response, db: Session = Depends(get_db)):
         "status": "success",
         "message": "Demo data loaded into an isolated run successfully",
         "user_email": demo_email,
-        "run_id": scan_run.id
+        "run_id": scan_run.id,
+        "token": session_token
     }
+
 
 @app.delete("/api/purge")
 def purge_user_data(request: Request, response: Response, db: Session = Depends(get_db)):
