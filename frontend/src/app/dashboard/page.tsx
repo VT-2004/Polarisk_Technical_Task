@@ -161,12 +161,16 @@ export default function DashboardPage() {
   const formatCurrency = (amount: number, currency: string = "INR") => {
     const symbol = currency === "INR" ? "₹" : (currency === "USD" ? "$" : (currency === "EUR" ? "€" : currency));
     return `${symbol}${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    // Auth headers helper (supports cross-domain token fallback)
-  const getAuthHeaders = () => {
+  };
+
+  // Auth headers helper (supports cross-domain token fallback)
+  const getAuthHeaders = (): Record<string, string> => {
     if (typeof window === "undefined") return {};
     const token = localStorage.getItem("spend_intel_token");
     return token ? { "Authorization": `Bearer ${token}` } : {};
   };
+
+
 
   const fetchDashboard = async (runId?: number | null) => {
     try {
