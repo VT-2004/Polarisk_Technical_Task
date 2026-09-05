@@ -4,6 +4,16 @@
 
 ---
 
+### 🌐 Live Deployments & Links
+
+- **🚀 Live Web Application (Vercel):** [https://frontend-vt-2004s-projects.vercel.app](https://frontend-vt-2004s-projects.vercel.app)
+- **⚡ Live Backend API (Render):** [https://polarisk-technical-task.onrender.com](https://polarisk-technical-task.onrender.com)
+- **📦 GitHub Repository:** [https://github.com/VT-2004/Polarisk_Technical_Task](https://github.com/VT-2004/Polarisk_Technical_Task)
+- **🎥 Video Walkthrough Demo:** *[Add your Loom/Drive link here]*
+
+---
+
+
 ## Architecture Overview
 
 ```
