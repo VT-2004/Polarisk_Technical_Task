@@ -18,6 +18,8 @@ if sys.platform == "win32":
 
 # Load environment variables
 load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+
 
 from db import get_db, init_db, SessionLocal
 from models import UserSession, Transaction, AnomalyFlag, ScanProgress, ScanRun

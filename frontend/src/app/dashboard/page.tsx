@@ -219,14 +219,20 @@ export default function DashboardPage() {
 
         if (progress.is_scanning) {
           setTimeout(pollScanProgress, 1500);
-        } else if (progress.stage === "complete") {
-          fetchDashboard();
+        } else {
+          setIsScanning(false);
+          if (progress.stage === "complete") {
+            fetchDashboard();
+          } else if (progress.stage === "error") {
+            setError(progress.message || progress.error || "Inbox scan encountered an issue");
+          }
         }
       }
     } catch (e) {
       // Ignore polling errors
     }
   };
+
 
   const triggerScan = async () => {
     setIsScanning(true);

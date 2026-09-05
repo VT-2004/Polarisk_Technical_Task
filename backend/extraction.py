@@ -3,11 +3,16 @@ import json
 import re
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator
+from dotenv import load_dotenv
+
+load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+
 
 class ExtractedTransaction(BaseModel):
     is_transaction: bool = True
@@ -68,22 +73,44 @@ RULES:
 """
 
 def extract_transaction_with_groq(email_content: str) -> Optional[ExtractedTransaction]:
-    """Calls Groq API (LLaMA-3.3-70b-versatile or LLaMA-3.1-8b-instant) for JSON extraction."""
+    """Calls Groq API with multi-model fallback for JSON extraction."""
     from groq import Groq
     client = Groq(api_key=GROQ_API_KEY)
     
-    response = client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[
-            {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
-            {"role": "user", "content": f"EMAIL CONTENT TO EXTRACT:\n{email_content}"}
-        ],
-        temperature=0.0,
-        response_format={"type": "json_object"}
-    )
+    models_to_try = [
+        GROQ_MODEL,
+        "openai/gpt-oss-20b",
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-120b"
+    ]
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
+
+    last_err = None
+    for model_name in unique_models:
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
+                    {"role": "user", "content": f"EMAIL CONTENT TO EXTRACT:\n{email_content}"}
+                ],
+                temperature=0.0,
+                response_format={"type": "json_object"}
+            )
+            raw_json = response.choices[0].message.content.strip()
+            parsed = parse_json_to_transaction(raw_json)
+            if parsed:
+                return parsed
+        except Exception as e:
+            last_err = e
+            print(f"[GROQ EXTRACTION RETRY] Model {model_name} failed: {e}. Trying fallback model...")
+            continue
     
-    raw_json = response.choices[0].message.content.strip()
-    return parse_json_to_transaction(raw_json)
+    print(f"[GROQ EXTRACTION ERROR] All Groq models failed. Last error: {last_err}")
+    return None
+
 
 def extract_transaction_with_anthropic(email_content: str) -> Optional[ExtractedTransaction]:
     """Calls Anthropic Claude API for JSON extraction."""

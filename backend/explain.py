@@ -1,11 +1,16 @@
 import os
 import json
 from typing import Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+
 
 EXPLANATION_SYSTEM_PROMPT = """You are a financial intelligence assistant.
 You are given a pre-computed spending fact or anomaly flag detected by our rules engine.
@@ -76,20 +81,36 @@ def generate_explanation_for_flag(flag: Dict[str, Any]) -> str:
         elif GROQ_API_KEY:
             from groq import Groq
             client = Groq(api_key=GROQ_API_KEY)
-            resp = client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[
-                    {"role": "system", "content": EXPLANATION_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.2,
-                max_tokens=100
-            )
-            explanation = resp.choices[0].message.content.strip()
-            return explanation.strip('"')
+            models_to_try = [
+                GROQ_MODEL,
+                "openai/gpt-oss-20b",
+                "qwen/qwen3.8-27b",
+                "openai/gpt-oss-120b"
+            ]
+            seen = set()
+            unique_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
+
+            for model_name in unique_models:
+                try:
+                    resp = client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {"role": "system", "content": EXPLANATION_SYSTEM_PROMPT},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        max_tokens=100,
+                        temperature=0.2
+                    )
+                    explanation = resp.choices[0].message.content.strip()
+                    return explanation.strip('"')
+                except Exception as e:
+                    print(f"[GROQ EXPLAIN RETRY] Model {model_name} failed: {e}. Trying fallback...")
+                    continue
             
+            return generate_rule_based_fallback_explanation(flag)
     except Exception as e:
-        pass
+        print(f"[EXPLANATION WARNING] LLM explanation failed: {e}. Using deterministic rule-based template.")
+        return generate_rule_based_fallback_explanation(flag)
 
     # Fallback to deterministic template
     return generate_rule_based_fallback_explanation(flag)
