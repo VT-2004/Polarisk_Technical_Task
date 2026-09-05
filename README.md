@@ -91,7 +91,8 @@
 
    LLM_PROVIDER="groq"
    GROQ_API_KEY="gsk_your_groq_api_key"
-   GROQ_MODEL="llama-3.3-70b-versatile"
+   GROQ_MODEL="openai/gpt-oss-20b" # with automatic multi-model fallback
+
 
    SESSION_SECRET_KEY="spend-intel-secret-key"
    FRONTEND_URL="http://localhost:3000"
