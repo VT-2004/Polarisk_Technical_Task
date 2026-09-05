@@ -142,6 +142,8 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; bar: string }>
   other: { bg: "bg-slate-500/10", text: "text-slate-400", bar: "bg-slate-500" }
 };
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
 export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -166,8 +168,8 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
       const url = runId 
-        ? `http://localhost:8000/api/dashboard?run_id=${runId}` 
-        : "http://localhost:8000/api/dashboard";
+        ? `${BACKEND_URL}/api/dashboard?run_id=${runId}` 
+        : `${BACKEND_URL}/api/dashboard`;
 
       const res = await fetch(url, {
         credentials: "include"
@@ -196,7 +198,7 @@ export default function DashboardPage() {
 
   const pollScanProgress = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/scan/progress", {
+      const res = await fetch(`${BACKEND_URL}/api/scan/progress`, {
         credentials: "include"
       });
       if (res.ok) {
@@ -218,7 +220,7 @@ export default function DashboardPage() {
   const triggerScan = async () => {
     setIsScanning(true);
     try {
-      const res = await fetch("http://localhost:8000/api/scan", {
+      const res = await fetch(`${BACKEND_URL}/api/scan`, {
         method: "POST",
         credentials: "include"
       });
@@ -236,7 +238,7 @@ export default function DashboardPage() {
       return;
     }
     try {
-      await fetch(`http://localhost:8000/api/runs/${runId}`, {
+      await fetch(`${BACKEND_URL}/api/runs/${runId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -248,7 +250,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8000/api/auth/logout", {
+      await fetch(`${BACKEND_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include"
       });
@@ -264,7 +266,7 @@ export default function DashboardPage() {
     }
     setIsPurging(true);
     try {
-      await fetch("http://localhost:8000/api/auth/revoke", {
+      await fetch(`${BACKEND_URL}/api/auth/revoke`, {
         method: "POST",
         credentials: "include"
       });
@@ -276,6 +278,7 @@ export default function DashboardPage() {
       setIsPurging(false);
     }
   };
+
 
   useEffect(() => {
     fetchDashboard();

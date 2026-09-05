@@ -41,7 +41,13 @@ app = FastAPI(
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        FRONTEND_URL, 
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000",
+        "https://polarisk-technical-task.vercel.app"
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,6 +56,16 @@ app.add_middleware(
 # Include Auth Router
 app.include_router(auth_router)
 
+@app.get("/")
+@app.head("/")
+def root_check():
+    return {
+        "status": "online",
+        "service": "Gmail Spend Intelligence API",
+        "version": "1.1.0",
+        "docs": "/docs"
+    }
+
 @app.get("/api/health")
 def health_check():
     return {
@@ -57,6 +73,7 @@ def health_check():
         "timestamp": datetime.datetime.utcnow().isoformat(),
         "llm_provider": os.getenv("LLM_PROVIDER", "groq")
     }
+
 
 def process_inbox_pipeline(user_email: str, db_session_factory, run_name: Optional[str] = None):
     """

@@ -17,6 +17,8 @@ import {
   Zap
 } from "lucide-react";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
 export default function LandingPage() {
   const router = useRouter();
   const [isDemoLoading, setIsDemoLoading] = useState(false);
@@ -24,28 +26,29 @@ export default function LandingPage() {
 
   const handleConnectGmail = () => {
     // Redirect to FastAPI backend OAuth login endpoint
-    window.location.href = "http://localhost:8000/api/auth/login";
+    window.location.href = `${BACKEND_URL}/api/auth/login`;
   };
 
   const handleLaunchDemo = async () => {
     setIsDemoLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetch("http://localhost:8000/api/demo/load", {
+      const res = await fetch(`${BACKEND_URL}/api/demo/load`, {
         method: "POST",
         credentials: "include"
       });
       if (res.ok) {
         router.push("/dashboard");
       } else {
-        setErrorMsg("Could not connect to backend server. Make sure the FastAPI backend is running on port 8000.");
+        setErrorMsg(`Could not connect to backend server at ${BACKEND_URL}. Ensure the backend is active.`);
       }
     } catch (err) {
-      setErrorMsg("Backend connection failed. Ensure backend server is running on http://localhost:8000.");
+      setErrorMsg(`Backend connection failed at ${BACKEND_URL}. Ensure the backend server is running.`);
     } finally {
       setIsDemoLoading(false);
     }
   };
+
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
